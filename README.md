@@ -1,0 +1,1 @@
+The application to manage remote machines
