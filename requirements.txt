@@ -1,0 +1,5 @@
+django
+kubernetes
+clerk-backend-api
+httpx
+python-dotenv

@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% load custom_filters %}
+
+{% block title %}Nodes - {{ cluster.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .node-card {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    background-color: var(--card-background);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+  }
+
+  .node-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+
+  .node-name {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .node-name i {
+    color: var(--text-secondary);
+  }
+
+  .node-meta {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+  }
+
+  .node-meta i {
+    width: 16px;
+    margin-right: 0.5rem;
+  }
+
+  .label-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius);
+    font-size: 0.75rem;
+    background-color: var(--background);
+    color: var(--text-secondary);
+    margin: 0.25rem;
+  }
+
+  .status-ready {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+  }
+
+  .status-notready {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--error);
+  }
+
+  .filter-card {
+    background-color: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .filter-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+  }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'cluster_list' %}">Clusters</a></li>
+<li class="breadcrumb-item"><a href="{% url 'dashboard' cluster_id %}">{{ cluster.name }}</a></li>
+<li class="breadcrumb-item active">Nodes</li>
+{% endblock %}
+
+{% block page_title %}Kubernetes Nodes{% endblock %}
+{% block page_description %}Monitor node status and resources{% endblock %}
+
+{% block content %}
+{% if data %}
+<div class="filter-card">
+  <h5 class="filter-title">Filters</h5>
+  <div class="row g-3">
+    <div class="col-md-4">
+      <input type="text" class="form-control" id="searchInput" placeholder="Search by name..." onkeyup="applyFilters()">
+    </div>
+    <div class="col-md-4">
+      <input type="text" class="form-control" id="labelFilter" placeholder="Filter by label (key:value)" onkeyup="applyFilters()">
+    </div>
+    <div class="col-md-4">
+      <select class="form-select" id="statusFilter" onchange="applyFilters()">
+        <option value="">All Statuses</option>
+        {% with status_options="Ready,NotReady"|split:"," %}
+        {% for status in status_options %}
+        <option value="{{ status }}">{{ status }}</option>
+        {% endfor %}
+        {% endwith %}
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  {% for item in data %}
+  <div class="col-md-6 filterable-item"
+       data-name="{{ item.metadata.name }}"
+       data-labels="{% for key, value in item.metadata.labels.items %}{{ key }}:{{ value }},{% endfor %}"
+       data-status="{% for condition in item.status.conditions %}{% if condition.type == 'Ready' %}{{ condition.status }}{% endif %}{% endfor %}">
+    <div class="node-card">
+      <h3 class="node-name">
+        <i class="fas fa-server"></i>
+        {{ item.metadata.name }}
+      </h3>
+
+      <div class="node-meta">
+        <p><i class="fas fa-tags"></i>Labels:</p>
+        {% for key, value in item.metadata.labels.items %}
+        <span class="label-badge" title="{{ key }}: {{ value }}">
+          {{ key }}: {{ value }}
+        </span>
+        {% endfor %}
+      </div>
+
+      <div class="node-meta">
+        <p><i class="fas fa-info-circle"></i>Status:</p>
+        {% for condition in item.status.conditions %}
+        {% if condition.type == "Ready" %}
+        <span class="status-{{ condition.status|lower }}">
+          {{ condition.type }}: {{ condition.status }}
+        </span>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div id="noResults" class="alert alert-info text-center" style="display: none;">
+  No nodes match the current filters.
+</div>
+{% else %}
+<div class="alert alert-info text-center" role="alert">
+  No nodes are currently available in the cluster.
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function applyFilters() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const labelFilter = document.getElementById('labelFilter').value.toLowerCase();
+    const statusFilter = document.getElementById('statusFilter').value;
+    
+    const items = document.querySelectorAll('.filterable-item');
+    let visibleCount = 0;
+
+    items.forEach(item => {
+      const name = item.getAttribute('data-name').toLowerCase();
+      const labels = item.getAttribute('data-labels').toLowerCase();
+      const status = item.getAttribute('data-status');
+      
+      const matchesSearch = name.includes(searchTerm);
+      const matchesLabel = !labelFilter || labels.includes(labelFilter);
+      const matchesStatus = !statusFilter || status === statusFilter;
+
+      if (matchesSearch && matchesLabel && matchesStatus) {
+        item.style.display = '';
+        visibleCount++;
+      } else {
+        item.style.display = 'none';
+      }
+    });
+
+    const noResults = document.getElementById('noResults');
+    noResults.style.display = visibleCount === 0 ? '' : 'none';
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% load static %}
+{% load custom_filters %}
+<div class="filter-controls mb-4">
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title mb-3">Filters</h5>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <input type="text" class="form-control" id="searchInput" placeholder="Search by name..." onkeyup="applyFilters()">
+        </div>
+        <div class="col-md-4">
+          <input type="text" class="form-control" id="labelFilter" placeholder="Filter by label (key:value)" onkeyup="applyFilters()">
+        </div>
+        {% if show_status_filter %}
+        <div class="col-md-4">
+          <select class="form-select" id="statusFilter" onchange="applyFilters()">
+            <option value="">All Statuses</option>
+            {% for status in status_options|split:"," %}
+            <option value="{{ status }}">{{ status }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function applyFilters() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const labelFilter = document.getElementById('labelFilter').value.toLowerCase();
+    const statusFilter = document.getElementById('statusFilter')?.value.toLowerCase() || '';
+    
+    const items = document.querySelectorAll('.filterable-item');
+    let visibleCount = 0;
+
+    items.forEach(item => {
+        const name = item.getAttribute('data-name').toLowerCase();
+        const labels = item.getAttribute('data-labels').toLowerCase();
+        const status = item.getAttribute('data-status')?.toLowerCase() || '';
+        
+        const matchesSearch = name.includes(searchTerm);
+        const matchesLabel = !labelFilter || labels.includes(labelFilter);
+        const matchesStatus = !statusFilter || status === statusFilter;
+
+        if (matchesSearch && matchesLabel && matchesStatus) {
+            item.style.display = '';
+            visibleCount++;
+        } else {
+            item.style.display = 'none';
+        }
+    });
+
+    // Update no results message
+    const noResults = document.getElementById('noResults');
+    if (noResults) {
+        if (visibleCount === 0) {
+            noResults.style.display = '';
+        } else {
+            noResults.style.display = 'none';
+        }
+    }
+}
+
+// Initialize filters on page load
+document.addEventListener('DOMContentLoaded', applyFilters);
+</script> 

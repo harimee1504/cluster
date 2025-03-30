@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+{% load custom_filters %}
+
+{% block title %}Services - {{ cluster.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .service-card {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    background-color: var(--card-background);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+  }
+
+  .service-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+
+  .service-name {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .service-name i {
+    color: var(--text-secondary);
+  }
+
+  .service-meta {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+  }
+
+  .service-meta i {
+    width: 16px;
+    margin-right: 0.5rem;
+  }
+
+  .label-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius);
+    font-size: 0.75rem;
+    background-color: var(--background);
+    color: var(--text-secondary);
+    margin: 0.25rem;
+  }
+
+  .service-type {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .type-clusterip {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+  }
+
+  .type-nodeport {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: var(--warning);
+  }
+
+  .type-loadbalancer {
+    background-color: rgba(99, 102, 241, 0.1);
+    color: #6366f1;
+  }
+
+  .filter-card {
+    background-color: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .filter-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+  }
+
+  .port-info {
+    background-color: var(--background);
+    border-radius: var(--radius);
+    padding: 1rem;
+    margin-top: 1rem;
+  }
+
+  .port-info-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+  }
+
+  .port-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .port-item:last-child {
+    border-bottom: none;
+  }
+
+  .port-detail {
+    font-size: 0.875rem;
+    color: var(--text-primary);
+  }
+
+  .port-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'cluster_list' %}">Clusters</a></li>
+<li class="breadcrumb-item"><a href="{% url 'dashboard' cluster_id %}">{{ cluster.name }}</a></li>
+<li class="breadcrumb-item active">Services</li>
+{% endblock %}
+
+{% block page_title %}Kubernetes Services{% endblock %}
+{% block page_description %}Manage and monitor service endpoints{% endblock %}
+
+{% block content %}
+{% if data %}
+{% with status_options="ClusterIP,NodePort,LoadBalancer,ExternalName"|split:"," %}
+<div class="filter-card">
+  <h5 class="filter-title">Filters</h5>
+  <div class="row g-3">
+    <div class="col-md-4">
+      <input type="text" class="form-control" id="searchInput" placeholder="Search by name..." onkeyup="applyFilters()">
+    </div>
+    <div class="col-md-4">
+      <input type="text" class="form-control" id="labelFilter" placeholder="Filter by label (key:value)" onkeyup="applyFilters()">
+    </div>
+    <div class="col-md-4">
+      <select class="form-select" id="statusFilter" onchange="applyFilters()">
+        <option value="">All Types</option>
+        {% for type in status_options %}
+        <option value="{{ type }}">{{ type }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  {% for item in data %}
+  <div class="col-md-6 col-lg-4 filterable-item"
+       data-name="{{ item.metadata.name }}"
+       data-labels="{% for key, value in item.metadata.labels.items %}{{ key }}:{{ value }},{% endfor %}"
+       data-status="{{ item.spec.type }}">
+    <div class="service-card">
+      <h3 class="service-name">
+        <i class="fas fa-network-wired"></i>
+        {{ item.metadata.name }}
+      </h3>
+
+      <div class="service-meta">
+        <p>
+          <i class="fas fa-info-circle"></i>
+          Type: 
+          <span class="service-type type-{{ item.spec.type|lower }}">
+            {{ item.spec.type }}
+          </span>
+        </p>
+      </div>
+
+      <div class="service-meta">
+        <p>
+          <i class="fas fa-network-wired"></i>
+          Cluster IP: {{ item.spec.cluster_ip }}
+        </p>
+      </div>
+
+      {% if item.metadata.labels %}
+      <div class="service-meta">
+        <p><i class="fas fa-tags"></i>Labels:</p>
+        {% for key, value in item.metadata.labels.items %}
+        <span class="label-badge">{{ key }}: {{ value }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if item.spec.ports %}
+      <div class="port-info">
+        <h6 class="port-info-title">Ports Configuration</h6>
+        {% for port in item.spec.ports %}
+        <div class="port-item">
+          <div>
+            <span class="port-detail">{{ port.port }}</span>
+            <span class="port-label d-block">Port</span>
+          </div>
+          {% if port.node_port %}
+          <div>
+            <span class="port-detail">{{ port.node_port }}</span>
+            <span class="port-label d-block">Node Port</span>
+          </div>
+          {% endif %}
+          {% if port.target_port %}
+          <div>
+            <span class="port-detail">{{ port.target_port }}</span>
+            <span class="port-label d-block">Target Port</span>
+          </div>
+          {% endif %}
+          {% if port.protocol %}
+          <div>
+            <span class="port-detail">{{ port.protocol }}</span>
+            <span class="port-label d-block">Protocol</span>
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div id="noResults" class="alert alert-info text-center" style="display: none;">
+  No services match the current filters.
+</div>
+{% endwith %}
+{% else %}
+<div class="alert alert-info text-center" role="alert">
+  No services found in the cluster.
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function applyFilters() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const labelFilter = document.getElementById('labelFilter').value.toLowerCase();
+    const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
+    
+    const items = document.querySelectorAll('.filterable-item');
+    let visibleCount = 0;
+
+    items.forEach(item => {
+      const name = item.getAttribute('data-name').toLowerCase();
+      const labels = item.getAttribute('data-labels').toLowerCase();
+      const status = item.getAttribute('data-status').toLowerCase();
+      
+      const matchesSearch = name.includes(searchTerm);
+      const matchesLabel = !labelFilter || labels.includes(labelFilter);
+      const matchesStatus = !statusFilter || status === statusFilter;
+
+      if (matchesSearch && matchesLabel && matchesStatus) {
+        item.style.display = '';
+        visibleCount++;
+      } else {
+        item.style.display = 'none';
+      }
+    });
+
+    const noResults = document.getElementById('noResults');
+    noResults.style.display = visibleCount === 0 ? '' : 'none';
+  }
+</script>
+{% endblock %}

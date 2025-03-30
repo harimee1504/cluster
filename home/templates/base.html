@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Kubernetes Dashboard{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --primary-color: #0070f3;
+        --primary-hover: #0051a2;
+        --background: #f7f8f9;
+        --card-background: #ffffff;
+        --text-primary: #111827;
+        --text-secondary: #6b7280;
+        --border-color: #e5e7eb;
+        --success: #10b981;
+        --error: #ef4444;
+        --warning: #f59e0b;
+        --radius: 0.75rem;
+        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      }
+
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--background);
+        color: var(--text-primary);
+      }
+
+      .page-header {
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid var(--border-color);
+        background-color: var(--card-background);
+      }
+
+      .page-title {
+        font-size: 2rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+      }
+
+      .page-description {
+        color: var(--text-secondary);
+        margin-top: 0.5rem;
+      }
+
+      .breadcrumb {
+        margin-bottom: 1rem;
+      }
+
+      .breadcrumb-item a {
+        color: var(--text-secondary);
+        text-decoration: none;
+        transition: color 0.2s ease;
+      }
+
+      .breadcrumb-item a:hover {
+        color: var(--primary-color);
+      }
+
+      .breadcrumb-item.active {
+        color: var(--text-primary);
+        font-weight: 500;
+      }
+
+      .card {
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        background-color: var(--card-background);
+        box-shadow: var(--shadow-sm);
+        transition: all 0.2s ease;
+      }
+
+      .card:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+      }
+
+      .btn {
+        border-radius: var(--radius);
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+      }
+
+      .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+      }
+
+      .btn-primary:hover {
+        background-color: var(--primary-hover);
+        border-color: var(--primary-hover);
+        transform: translateY(-1px);
+      }
+
+      .btn-secondary {
+        background-color: var(--background);
+        border-color: var(--border-color);
+        color: var(--text-primary);
+      }
+
+      .btn-secondary:hover {
+        background-color: var(--border-color);
+        border-color: var(--border-color);
+        color: var(--text-primary);
+      }
+
+      .form-label {
+        font-weight: 500;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+      }
+
+      .form-control {
+        border-radius: var(--radius);
+        border: 1px solid var(--border-color);
+        padding: 0.75rem 1rem;
+        transition: all 0.2s ease;
+      }
+
+      .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(0, 112, 243, 0.2);
+      }
+
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+
+      .status-success {
+        background-color: rgba(16, 185, 129, 0.1);
+        color: var(--success);
+      }
+
+      .status-error {
+        background-color: rgba(239, 68, 68, 0.1);
+        color: var(--error);
+      }
+
+      .status-warning {
+        background-color: rgba(245, 158, 11, 0.1);
+        color: var(--warning);
+      }
+
+      .resource-icon {
+        width: 24px;
+        height: 24px;
+        margin-right: 0.5rem;
+        color: var(--text-secondary);
+      }
+
+      .resource-meta {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+      }
+
+      .resource-name {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.75rem;
+      }
+
+      .table {
+        --bs-table-bg: transparent;
+        --bs-table-border-color: var(--border-color);
+      }
+
+      .table thead th {
+        background-color: var(--background);
+        font-weight: 500;
+        color: var(--text-secondary);
+        border-bottom-width: 1px;
+      }
+
+      .table tbody tr:hover {
+        background-color: var(--background);
+      }
+
+      .modal-content {
+        border-radius: var(--radius);
+        border: none;
+        box-shadow: var(--shadow-md);
+      }
+
+      .modal-header {
+        border-bottom: 1px solid var(--border-color);
+        padding: 1.5rem;
+      }
+
+      .modal-body {
+        padding: 1.5rem;
+      }
+
+      .modal-footer {
+        border-top: 1px solid var(--border-color);
+        padding: 1.5rem;
+      }
+
+      {% block extra_css %}{% endblock %}
+    </style>
+  </head>
+  <body>
+    <div class="page-header">
+      <div class="container">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb">
+            {% block breadcrumbs %}
+            <li class="breadcrumb-item"><a href="{% url 'cluster_list' %}">Clusters</a></li>
+            {% endblock %}
+          </ol>
+        </nav>
+        <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+        <p class="page-description">{% block page_description %}{% endblock %}</p>
+      </div>
+    </div>
+
+    <div class="container pb-5">
+      {% block content %}{% endblock %}
+    </div>
+
+    {% block modals %}{% endblock %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
+  </body>
+</html> 

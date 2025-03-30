@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block title %}{{ cluster.name }} - Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+  .resource-card {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    background-color: var(--card-background);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+
+  .resource-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .resource-card .icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .resource-card .title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .resource-card .description {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+  }
+
+  .resource-card .count {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--primary-color);
+  }
+
+  .cluster-info {
+    background-color: var(--background);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .cluster-info-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .cluster-info-value {
+    font-size: 1rem;
+    color: var(--text-primary);
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .cluster-info-value i {
+    color: var(--text-secondary);
+    width: 16px;
+  }
+
+  .pods-icon { color: var(--success); }
+  .nodes-icon { color: var(--primary-color); }
+  .services-icon { color: var(--warning); }
+  .ingress-icon { color: #6f42c1; }
+
+  .delete-btn {
+    color: var(--error);
+    border-color: var(--error);
+    background-color: transparent;
+  }
+
+  .delete-btn:hover {
+    background-color: var(--error);
+    border-color: var(--error);
+    color: white;
+  }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'cluster_list' %}">Clusters</a></li>
+<li class="breadcrumb-item active">{{ cluster.name }}</li>
+{% endblock %}
+
+{% block page_title %}{{ cluster.name }} Dashboard{% endblock %}
+{% block page_description %}Monitor and manage your Kubernetes resources{% endblock %}
+
+{% block content %}
+<div class="cluster-info">
+  <div class="row">
+    <div class="col-md-4">
+      <h6 class="cluster-info-title">Context</h6>
+      <p class="cluster-info-value">
+        <i class="fas fa-code-branch"></i>
+        {{ cluster.context }}
+      </p>
+    </div>
+    <div class="col-md-4">
+      <h6 class="cluster-info-title">API Endpoint</h6>
+      <p class="cluster-info-value">
+        <i class="fas fa-server"></i>
+        {{ cluster.api_endpoint }}
+      </p>
+    </div>
+    <div class="col-md-4">
+      <h6 class="cluster-info-title">Status</h6>
+      <div class="d-flex justify-content-between align-items-center">
+        <p class="cluster-info-value">
+          <span class="status-badge {% if cluster.is_active %}status-success{% else %}status-error{% endif %}">
+            <i class="fas fa-circle me-2"></i>
+            {{ cluster.status }}
+          </span>
+        </p>
+        <button class="btn delete-btn" onclick="confirmDelete()">
+          <i class="fas fa-trash-alt me-2"></i>Delete Cluster
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <!-- Pods Card -->
+  <div class="col-md-6 col-lg-3 mb-4">
+    <a href="{% url 'pods' cluster.id %}" class="resource-card">
+      <div class="text-center">
+        <i class="fas fa-cube icon pods-icon"></i>
+        <h3 class="title">Pods</h3>
+        <p class="description">Manage and monitor your pods</p>
+        <div class="count">{{ pod_count }}</div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Nodes Card -->
+  <div class="col-md-6 col-lg-3 mb-4">
+    <a href="{% url 'nodes' cluster.id %}" class="resource-card">
+      <div class="text-center">
+        <i class="fas fa-server icon nodes-icon"></i>
+        <h3 class="title">Nodes</h3>
+        <p class="description">View cluster nodes status</p>
+        <div class="count">{{ node_count }}</div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Services Card -->
+  <div class="col-md-6 col-lg-3 mb-4">
+    <a href="{% url 'services' cluster.id %}" class="resource-card">
+      <div class="text-center">
+        <i class="fas fa-network-wired icon services-icon"></i>
+        <h3 class="title">Services</h3>
+        <p class="description">Manage service endpoints</p>
+        <div class="count">{{ service_count }}</div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Ingress Card -->
+  <div class="col-md-6 col-lg-3 mb-4">
+    <a href="{% url 'ingress' cluster.id %}" class="resource-card">
+      <div class="text-center">
+        <i class="fas fa-globe icon ingress-icon"></i>
+        <h3 class="title">Ingress</h3>
+        <p class="description">Configure external access</p>
+        <div class="count">{{ ingress_count }}</div>
+      </div>
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block modals %}
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirm Deletion</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="text-center mb-4">
+          <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+          <h4>Delete Cluster?</h4>
+          <p class="text-secondary">
+            Are you sure you want to delete the cluster "{{ cluster.name }}"?<br>
+            This action cannot be undone.
+          </p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" onclick="deleteCluster()">
+          <i class="fas fa-trash-alt me-2"></i>Delete Cluster
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  let deleteModal;
+
+  document.addEventListener('DOMContentLoaded', function() {
+    deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+  });
+
+  function confirmDelete() {
+    deleteModal.show();
+  }
+
+  function deleteCluster() {
+    const deleteButton = document.querySelector('#deleteModal .btn-danger');
+    deleteButton.disabled = true;
+    deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Deleting...';
+
+    fetch('/cluster/{{ cluster.id }}/delete/', {
+      method: 'POST',
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        window.location.href = '{% url "cluster_list" %}';
+      } else {
+        throw new Error(data.error || 'Failed to delete cluster');
+      }
+    })
+    .catch(error => {
+      alert(error.message);
+      deleteButton.disabled = false;
+      deleteButton.innerHTML = '<i class="fas fa-trash-alt me-2"></i>Delete Cluster';
+    });
+  }
+</script>
+{% endblock %} 
