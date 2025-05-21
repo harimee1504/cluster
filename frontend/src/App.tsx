@@ -7,18 +7,14 @@ function App() {
   let data = {
     navMain: [
       {
-        title: "TaskNote",
+        title: "Clusters",
         url: "#",
         icon: undefined,
         isActive: true,
         items: [
           {
-            title: "Todo",
-            url: () => {},
-          },
-          {
-            title: "Note",
-            url: () => {},
+            title: "cluster",
+            url: () => window.location.href = '/cluster/',
           },
         ],
       },
