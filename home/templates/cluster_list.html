@@ -313,27 +313,42 @@
     </script>
     <script>
       let addClusterModal;
-      let fileContent = null;
       let deleteModal;
+      let fileContent = null;
       let currentClusterId;
 
-      document.addEventListener('DOMContentLoaded', function() {
-        addClusterModal = new bootstrap.Modal(document.getElementById('addClusterModal'));
-        deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-        setupDropZone();
-      });
+      // Function to initialize modals
+      function initializeModals() {
+        const addModalElement = document.getElementById('addClusterModal');
+        const deleteModalElement = document.getElementById('deleteModal');
+        
+        if (addModalElement) {
+          addClusterModal = new bootstrap.Modal(addModalElement);
+        }
+        if (deleteModalElement) {
+          deleteModal = new bootstrap.Modal(deleteModalElement);
+        }
+      }
+
+      // Initialize when content is mounted
+      const checkModalInterval = setInterval(() => {
+        if (document.getElementById('addClusterModal') && document.getElementById('deleteModal')) {
+          initializeModals();
+          clearInterval(checkModalInterval);
+        }
+      }, 100);
 
       function showAddClusterModal() {
-        document.getElementById('clusterName').value = '';
-        document.getElementById('kubeconfigContent').value = '';
-        // document.querySelector('.drop-zone-text').innerHTML = `
-        //   <i class="fas fa-cloud-upload-alt drop-zone-icon"></i>
-        //   <p class="drop-zone-text">
-        //     Drag and drop your kubeconfig file here<br>
-        //     <span class="text-primary">or click to select file</span>
-        //   </p>
-        // `;
-        addClusterModal.show();
+        if (addClusterModal) {
+          addClusterModal.show();
+        } else {
+          console.error('Add Cluster Modal not initialized');
+          // Try to initialize again
+          initializeModals();
+          if (addClusterModal) {
+            addClusterModal.show();
+          }
+        }
       }
 
       function setupDropZone() {
@@ -426,7 +441,16 @@
 
       function confirmDelete(clusterId) {
         currentClusterId = clusterId;
-        deleteModal.show();
+        if (deleteModal) {
+          deleteModal.show();
+        } else {
+          console.error('Delete Modal not initialized');
+          // Try to initialize again
+          initializeModals();
+          if (deleteModal) {
+            deleteModal.show();
+          }
+        }
       }
 
       function deleteCluster() {

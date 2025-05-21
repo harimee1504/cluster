@@ -222,12 +222,33 @@
 <script>
   let deleteModal;
 
-  document.addEventListener('DOMContentLoaded', function() {
-    deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-  });
+  // Function to initialize the modal
+  function initializeModal() {
+    const modalElement = document.getElementById('deleteModal');
+    if (modalElement) {
+      deleteModal = new bootstrap.Modal(modalElement);
+    }
+  }
+
+  // Initialize when content is mounted
+  const checkModalInterval = setInterval(() => {
+    if (document.getElementById('deleteModal')) {
+      initializeModal();
+      clearInterval(checkModalInterval);
+    }
+  }, 100);
 
   function confirmDelete() {
-    deleteModal.show();
+    if (deleteModal) {
+      deleteModal.show();
+    } else {
+      console.error('Modal not initialized');
+      // Try to initialize again
+      initializeModal();
+      if (deleteModal) {
+        deleteModal.show();
+      }
+    }
   }
 
   function deleteCluster() {

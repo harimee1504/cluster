@@ -331,22 +331,50 @@
   let totalMatches = 0;
   let logsModal;
 
-  document.addEventListener('DOMContentLoaded', function() {
-    logsModal = new bootstrap.Modal(document.getElementById('logsModal'));
-  });
+  // Function to initialize the modal
+  function initializeModal() {
+    const modalElement = document.getElementById('logsModal');
+    if (modalElement) {
+      logsModal = new bootstrap.Modal(modalElement);
+    }
+  }
+
+  // Initialize when content is mounted
+  const checkModalInterval = setInterval(() => {
+    if (document.getElementById('logsModal')) {
+      initializeModal();
+      clearInterval(checkModalInterval);
+    }
+  }, 100);
 
   function showLogs(podName, clusterId) {
-    const modal = document.getElementById('logsModal');
-    const title = document.getElementById('logsModalTitle');
+    if (logsModal) {
+      const modalTitle = document.getElementById('logsModalTitle');
+      modalTitle.textContent = `Logs - ${podName}`;
+      logsModal.show();
+      fetchLogs(podName, clusterId);
+    } else {
+      console.error('Modal not initialized');
+      // Try to initialize again
+      initializeModal();
+      if (logsModal) {
+        const modalTitle = document.getElementById('logsModalTitle');
+        modalTitle.textContent = `Logs - ${podName}`;
+        logsModal.show();
+        fetchLogs(podName, clusterId);
+      }
+    }
+  }
+
+  function fetchLogs(podName, clusterId) {
     const content = document.getElementById('logsContent');
     const logsSearchInput = document.getElementById('logsSearchInput');
     const searchInfo = document.getElementById('searchInfo');
     
-    title.textContent = `Logs: ${podName}`;
+    content.textContent = 'Loading logs...';
     logsSearchInput.value = '';
     currentMatchIndex = -1;
     searchInfo.textContent = '';
-    content.textContent = 'Loading logs...';
     
     fetch(`/cluster/${clusterId}/podlogs/${podName}/`)
       .then(response => response.json())
